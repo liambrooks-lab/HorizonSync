@@ -1,0 +1,59 @@
+@import "@uploadthing/react/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 242 247 255;
+    --surface: 255 255 255;
+    --surface-elevated: 231 240 255;
+    --foreground: 18 32 64;
+    --muted-foreground: 89 107 146;
+    --accent: 116 180 255;
+    --accent-strong: 54 123 255;
+    --border: 198 215 245;
+    --ring: 54 123 255;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 10 12 27;
+      --surface: 17 20 42;
+      --surface-elevated: 30 28 66;
+      --foreground: 236 240 255;
+      --muted-foreground: 154 162 204;
+      --accent: 165 138 255;
+      --accent-strong: 114 89 255;
+      --border: 58 60 108;
+      --ring: 165 138 255;
+    }
+  }
+
+  * {
+    @apply border-[rgb(var(--border))];
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at top left, rgba(var(--accent), 0.18), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(var(--accent-strong), 0.12), transparent 30%),
+      rgb(var(--background));
+    color: rgb(var(--foreground));
+    font-family: var(--font-body), sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display), sans-serif;
+  }
+}

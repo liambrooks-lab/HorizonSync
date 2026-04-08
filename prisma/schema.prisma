@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. AUTH & USER IDENTITY (The Profile)
+// These models are aligned with NextAuth's Prisma adapter while
+// still carrying the extra profile fields HorizonSync needs.
+// ==========================================
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  username      String?   @unique
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?   @db.Text
+  bio           String?   @db.Text
+  region        String?
+  socialLinks   String[]  @default([])
+
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relations
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  savedPosts    SavedPost[]
+  memberships   Member[]
+  ownedServers  Server[]   @relation("ServerOwner")
+  channels      Channel[]
+  messages      Message[]
+  directMessageConversationsAsOne DirectMessageConversation[] @relation("DirectMessageMemberOneUser")
+  directMessageConversationsAsTwo DirectMessageConversation[] @relation("DirectMessageMemberTwoUser")
+  documentFolders DocumentFolder[]
+  documents     Document[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// 2. THE GLOBAL FEED (Twitter Features)
+// ==========================================
+model Post {
+  id        String    @id @default(cuid())
+  content   String    @db.Text
+  mediaUrl  String?   // For images or videos
+  mediaType String?
+  mediaName String?
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  comments  Comment[]
+  likes     Like[]
+  saves     SavedPost[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([authorId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([authorId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId]) // Prevents double-liking
+  @@index([userId])
+}
+
+model SavedPost {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+// ==========================================
+// 3. HUBS (Discord Features)
+// ==========================================
+model Server {
+  id         String    @id @default(cuid())
+  name       String
+  imageUrl   String?
+  inviteCode String    @unique
+  ownerId    String
+
+  owner      User      @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members    Member[]
+  channels   Channel[]
+  directMessageConversations DirectMessageConversation[]
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([ownerId])
+}
+
+enum MemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+model Member {
+  id        String     @id @default(cuid())
+  role      MemberRole @default(MEMBER)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId  String
+  server    Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  messages  Message[]
+  directMessageConversationsAsOne DirectMessageConversation[] @relation("DirectMessageMemberOne")
+  directMessageConversationsAsTwo DirectMessageConversation[] @relation("DirectMessageMemberTwo")
+
+  @@unique([userId, serverId])
+  @@index([userId])
+  @@index([serverId])
+}
+
+enum ChannelType {
+  TEXT
+  AUDIO
+  VIDEO
+}
+
+model Channel {
+  id        String      @id @default(cuid())
+  name      String
+  type      ChannelType @default(TEXT)
+  description String?   @db.Text
+  position  Int         @default(0)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId  String
+  server    Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  
+  messages  Message[]
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([serverId, name])
+  @@index([serverId])
+  @@index([userId])
+}
+
+model DirectMessageConversation {
+  id          String   @id @default(cuid())
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  memberOneId String
+  memberOne   Member   @relation("DirectMessageMemberOne", fields: [memberOneId], references: [id], onDelete: Cascade)
+  memberTwoId String
+  memberTwo   Member   @relation("DirectMessageMemberTwo", fields: [memberTwoId], references: [id], onDelete: Cascade)
+  userOneId   String
+  userOne     User     @relation("DirectMessageMemberOneUser", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwoId   String
+  userTwo     User     @relation("DirectMessageMemberTwoUser", fields: [userTwoId], references: [id], onDelete: Cascade)
+  messages    Message[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([serverId, memberOneId, memberTwoId])
+  @@index([serverId])
+  @@index([memberOneId])
+  @@index([memberTwoId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  fileUrl   String?
+  fileName  String?
+  fileType  String?
+  fileSize  Int?
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  directMessageConversationId String?
+  directMessageConversation   DirectMessageConversation? @relation(fields: [directMessageConversationId], references: [id], onDelete: Cascade)
+
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([directMessageConversationId])
+  @@index([memberId])
+}
+
+// ==========================================
+// 4. MYSPACE (Notion Features)
+// ==========================================
+model DocumentFolder {
+  id        String     @id @default(cuid())
+  name      String
+  color     String?
+  position  Int        @default(0)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  content     String?  @db.Text // This stores stringified JSON from the editor layer.
+  icon        String?
+  coverImageUrl String?
+  isArchived  Boolean  @default(false)
+  isPublished Boolean  @default(false) // Published documents can later surface globally.
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId    String?
+  folder      DocumentFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  reminders   DocumentReminder[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([folderId])
+}
+
+model DocumentReminder {
+  id         String   @id @default(cuid())
+  title      String
+  note       String?  @db.Text
+  remindAt   DateTime
+  completed  Boolean  @default(false)
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([remindAt])
+}
