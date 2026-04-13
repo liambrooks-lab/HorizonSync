@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { useUploadThing } from "@/shared/lib/uploadthing-client";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { useToast } from "@/shared/components/ui/toast";
 
 type FeedComposerProps = {
   onCreate: (input: {
@@ -17,6 +18,7 @@ type FeedComposerProps = {
 };
 
 export function FeedComposer({ onCreate }: FeedComposerProps) {
+  const { showToast } = useToast();
   const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +58,21 @@ export function FeedComposer({ onCreate }: FeedComposerProps) {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      showToast({
+        title: "Post published",
+        description: "Your update is now live in the global feed.",
+        variant: "success",
+      });
     } catch (submissionError) {
+      showToast({
+        title: "Unable to publish",
+        description:
+          submissionError instanceof Error
+            ? submissionError.message
+            : "Unable to publish the post.",
+        variant: "error",
+      });
       setError(
         submissionError instanceof Error
           ? submissionError.message
@@ -68,7 +84,7 @@ export function FeedComposer({ onCreate }: FeedComposerProps) {
   }
 
   return (
-    <section className="rounded-[30px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-[0_26px_80px_-50px_rgba(12,24,68,0.45)]">
+    <section className="panel-surface rounded-[30px] border border-[rgb(var(--border))] p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[rgb(var(--muted-foreground))]">

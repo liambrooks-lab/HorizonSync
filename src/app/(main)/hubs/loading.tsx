@@ -1,10 +1,14 @@
+import { Skeleton } from "@/shared/components/ui/skeleton";
+
 export default function HubsLoading() {
   return (
-    <div className="flex min-h-[640px] animate-pulse">
-      <div className="w-[88px] border-r border-[rgb(var(--border))] bg-[rgb(var(--surface))]" />
-      <div className="w-[300px] border-r border-[rgb(var(--border))] bg-[rgb(var(--surface-elevated))]" />
-      <div className="flex-1 p-4">
-        <div className="h-full rounded-[30px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))]" />
+    <div className="panel-surface min-h-[640px] overflow-hidden rounded-[30px] border border-[rgb(var(--border))]">
+      <div className="flex min-h-[640px]">
+        <Skeleton className="hidden w-[88px] rounded-none md:block" />
+        <div className="flex-1 space-y-4 p-4">
+          <Skeleton className="h-16 w-full rounded-[24px] md:hidden" />
+          <Skeleton className="h-full min-h-[520px] w-full rounded-[30px]" />
+        </div>
       </div>
     </div>
   );

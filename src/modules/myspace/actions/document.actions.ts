@@ -9,10 +9,15 @@ import {
 } from "@/modules/myspace/lib/documents";
 import { getCurrentUser } from "@/shared/lib/auth";
 import { db } from "@/shared/lib/db";
+import {
+  sanitizeOptionalPlainText,
+  sanitizeOptionalUrl,
+  sanitizePlainText,
+} from "@/shared/lib/security";
 
 const documentUpdateSchema = z.object({
   documentId: z.string().cuid(),
-  title: z.string().trim().min(1).max(160),
+  title: z.string().trim().min(1).max(160).transform((value) => sanitizePlainText(value, 160)),
   icon: z.string().trim().max(16).nullable().optional(),
   coverImageUrl: z.string().url().nullable().optional(),
   folderId: z.string().cuid().nullable().optional(),
@@ -20,18 +25,18 @@ const documentUpdateSchema = z.object({
 });
 
 const createDocumentSchema = z.object({
-  title: z.string().trim().min(1).max(160),
+  title: z.string().trim().min(1).max(160).transform((value) => sanitizePlainText(value, 160)),
   folderId: z.string().cuid().nullable().optional(),
 });
 
 const createFolderSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(80).transform((value) => sanitizePlainText(value, 80)),
   color: z.string().trim().max(40).nullable().optional(),
 });
 
 const reminderSchema = z.object({
   documentId: z.string().cuid(),
-  title: z.string().trim().min(1).max(160),
+  title: z.string().trim().min(1).max(160).transform((value) => sanitizePlainText(value, 160)),
   note: z.string().trim().max(600).nullable().optional(),
   remindAt: z.string().datetime(),
 });
@@ -117,8 +122,8 @@ export async function updateDocumentAction(input: {
     },
     data: {
       title: parsedInput.title,
-      icon: parsedInput.icon ?? null,
-      coverImageUrl: parsedInput.coverImageUrl ?? null,
+      icon: sanitizeOptionalPlainText(parsedInput.icon, 16),
+      coverImageUrl: sanitizeOptionalUrl(parsedInput.coverImageUrl),
       folderId: parsedInput.folderId ?? null,
       content: JSON.stringify(parsedInput.content),
     },
@@ -156,7 +161,7 @@ export async function createReminderAction(input: {
   await db.documentReminder.create({
     data: {
       documentId: parsedInput.documentId,
-      note: parsedInput.note ?? null,
+      note: sanitizeOptionalPlainText(parsedInput.note, 600),
       remindAt: new Date(parsedInput.remindAt),
       title: parsedInput.title,
     },

@@ -4,6 +4,10 @@ import { z } from "zod";
 
 import { getCurrentUser } from "@/shared/lib/auth";
 import { db } from "@/shared/lib/db";
+import {
+  sanitizeOptionalPlainText,
+  sanitizePlainText,
+} from "@/shared/lib/security";
 
 const socialLinkSchema = z
   .string()
@@ -16,7 +20,7 @@ const socialLinkSchema = z
 
 const profileSettingsSchema = z.object({
   image: z.string().trim().optional().default(""),
-  name: z.string().trim().min(2).max(80),
+  name: z.string().trim().min(2).max(80).transform((value) => sanitizePlainText(value, 80)),
   bio: z.string().trim().max(280).optional().default(""),
   region: z.string().trim().max(80).optional().default(""),
   socialLinks: z.tuple([
@@ -70,8 +74,8 @@ export async function updateProfileSettingsAction(
     data: {
       image: parsedValues.data.image || currentUser.image,
       name: parsedValues.data.name,
-      bio: parsedValues.data.bio || null,
-      region: parsedValues.data.region || null,
+      bio: sanitizeOptionalPlainText(parsedValues.data.bio, 280),
+      region: sanitizeOptionalPlainText(parsedValues.data.region, 80),
       socialLinks: parsedValues.data.socialLinks.map((link) => link.trim()),
     },
   });

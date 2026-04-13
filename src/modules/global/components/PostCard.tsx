@@ -31,7 +31,7 @@ export function PostCard({ post, onComment, onLike, onSave }: PostCardProps) {
   const isImage = Boolean(post.mediaUrl && post.mediaType?.startsWith("image/"));
 
   return (
-    <article className="rounded-[30px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-[0_24px_80px_-54px_rgba(12,24,68,0.45)]">
+    <article className="panel-surface rounded-[30px] border border-[rgb(var(--border))] p-5 sm:p-6">
       <div className="flex items-start gap-4">
         {post.author.image ? (
           <img
@@ -141,7 +141,7 @@ export function PostCard({ post, onComment, onLike, onSave }: PostCardProps) {
       </div>
 
       <form
-        className="mt-5 flex gap-3"
+        className="mt-5 flex flex-col gap-3 sm:flex-row"
         onSubmit={async (event) => {
           event.preventDefault();
 

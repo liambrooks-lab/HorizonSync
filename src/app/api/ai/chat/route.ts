@@ -6,10 +6,6 @@ import { buildAssistantSystemPrompt } from "@/modules/ai/utils/system-prompts";
 
 export const maxDuration = 30;
 
-const openAiClient = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json(
@@ -31,6 +27,10 @@ export async function POST(request: Request) {
       role: "assistant" | "system" | "user";
     }>;
   };
+
+  const openAiClient = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 
   const response = await openAiClient.chat.completions.create({
     model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",

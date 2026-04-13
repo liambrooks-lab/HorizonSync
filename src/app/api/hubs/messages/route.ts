@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createHubMessage } from "@/modules/hubs/lib/hubs";
 import { getSession } from "@/shared/lib/auth";
 import { isPusherConfigured, pusherServer } from "@/shared/lib/pusher";
+import { assertSameOriginRequest } from "@/shared/lib/security";
 
 const messageSchema = z.object({
   serverId: z.string().cuid(),
@@ -21,6 +22,18 @@ const messageSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  try {
+    assertSameOriginRequest(request);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Invalid request origin.",
+      },
+      { status: 403 },
+    );
+  }
+
   const session = await getSession();
 
   if (!session?.user?.id) {

@@ -7,6 +7,8 @@ import { getProviders, signIn } from "next-auth/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { useToast } from "@/shared/components/ui/toast";
 
 type LoginFormProps = {
   callbackUrl?: string;
@@ -22,6 +24,7 @@ const providerVisuals: Record<
 };
 
 export function LoginForm({ callbackUrl = "/global" }: LoginFormProps) {
+  const { showToast } = useToast();
   const [providers, setProviders] = useState<string[]>([]);
   const [isLoadingProviders, setIsLoadingProviders] = useState(true);
   const [credentialError, setCredentialError] = useState<string | null>(null);
@@ -57,10 +60,10 @@ export function LoginForm({ callbackUrl = "/global" }: LoginFormProps) {
     <div className="space-y-6">
       <div className="grid gap-3">
         {isLoadingProviders ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 text-sm text-[rgb(var(--muted-foreground))]">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Checking configured providers...
-          </div>
+          <>
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </>
         ) : null}
 
         {providerButtons.map(({ id, icon: Icon, label }) => (
@@ -105,9 +108,19 @@ export function LoginForm({ callbackUrl = "/global" }: LoginFormProps) {
 
           if (response?.error) {
             setCredentialError("Invalid email or password.");
+            showToast({
+              title: "Sign-in failed",
+              description: "Check your email and password, then try again.",
+              variant: "error",
+            });
             return;
           }
 
+          showToast({
+            title: "Signed in",
+            description: "Your workspace is loading now.",
+            variant: "success",
+          });
           window.location.assign(response?.url ?? callbackUrl);
         }}
       >

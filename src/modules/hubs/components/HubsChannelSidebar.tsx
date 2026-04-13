@@ -8,6 +8,7 @@ import { useHubPresence } from "@/modules/hubs/hooks/useChatSocket";
 import { cn } from "@/shared/lib/utils";
 
 type HubsChannelSidebarProps = {
+  className?: string;
   directMessageTargets: Array<{
     routeId: string;
     memberId: string;
@@ -23,6 +24,7 @@ type HubsChannelSidebarProps = {
     name: string;
     type: "TEXT" | "AUDIO" | "VIDEO";
   }>;
+  onNavigate?: () => void;
 };
 
 function ChannelTypeIcon({ type }: { type: "TEXT" | "AUDIO" | "VIDEO" }) {
@@ -38,11 +40,13 @@ function ChannelTypeIcon({ type }: { type: "TEXT" | "AUDIO" | "VIDEO" }) {
 }
 
 export function HubsChannelSidebar({
+  className,
   directMessageTargets,
   serverId,
   serverName,
   serverPresenceChannelName,
   channels,
+  onNavigate,
 }: HubsChannelSidebarProps) {
   const pathname = usePathname();
   const { onlineMemberIds } = useHubPresence(
@@ -50,7 +54,12 @@ export function HubsChannelSidebar({
   );
 
   return (
-    <aside className="flex w-[300px] shrink-0 flex-col border-r border-[rgb(var(--border))] bg-[rgba(var(--surface),0.75)] backdrop-blur-xl">
+    <aside
+      className={cn(
+        "flex w-[300px] shrink-0 flex-col border-r border-[rgb(var(--border))] bg-[rgba(var(--surface),0.75)] backdrop-blur-xl",
+        className,
+      )}
+    >
       <div className="border-b border-[rgb(var(--border))] px-5 py-5">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[rgb(var(--muted-foreground))]">
           Active hub
@@ -79,6 +88,7 @@ export function HubsChannelSidebar({
                   )}
                   href={`/hubs/${serverId}/${channel.id}`}
                   key={channel.id}
+                  onClick={onNavigate}
                 >
                   <ChannelTypeIcon type={channel.type} />
                   <span>{channel.name}</span>
@@ -112,6 +122,7 @@ export function HubsChannelSidebar({
                     )}
                     href={`/hubs/${serverId}/${target.routeId}`}
                     key={target.memberId}
+                    onClick={onNavigate}
                   >
                     {target.image ? (
                       <img

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { HubsChannelSidebar } from "@/modules/hubs/components/HubsChannelSidebar";
+import { HubsConversationShell } from "@/modules/hubs/components/HubsConversationShell";
 import { getServerPresenceChannelName, getServerWorkspace } from "@/modules/hubs/lib/hubs";
 import { getCurrentUser } from "@/shared/lib/auth";
 
@@ -28,25 +28,24 @@ export default async function HubServerLayout({
   }
 
   return (
-    <div className="flex min-h-full">
-      <HubsChannelSidebar
-        channels={workspace.server.channels.map((channel) => ({
-          id: channel.id,
-          name: channel.name,
-          type: channel.type,
-        }))}
-        directMessageTargets={workspace.directMessageTargets.map((target) => ({
-          image: target.image,
-          memberId: target.memberId,
-          name: target.name,
-          role: target.role,
-          routeId: target.routeId,
-        }))}
-        serverId={workspace.server.id}
-        serverName={workspace.server.name}
-        serverPresenceChannelName={getServerPresenceChannelName(workspace.server.id)}
-      />
-      <div className="min-w-0 flex-1 p-4">{children}</div>
-    </div>
+    <HubsConversationShell
+      channels={workspace.server.channels.map((channel) => ({
+        id: channel.id,
+        name: channel.name,
+        type: channel.type,
+      }))}
+      directMessageTargets={workspace.directMessageTargets.map((target) => ({
+        image: target.image,
+        memberId: target.memberId,
+        name: target.name,
+        role: target.role,
+        routeId: target.routeId,
+      }))}
+      serverId={workspace.server.id}
+      serverName={workspace.server.name}
+      serverPresenceChannelName={getServerPresenceChannelName(workspace.server.id)}
+    >
+      {children}
+    </HubsConversationShell>
   );
 }

@@ -73,7 +73,7 @@ export function BlockEditor({ document: workspaceDocument }: BlockEditorProps) {
   }
 
   return (
-    <section className="rounded-[30px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-[0_32px_100px_-62px_rgba(12,24,68,0.75)]">
+    <section className="panel-surface rounded-[30px] border border-[rgb(var(--border))] p-4 sm:p-6">
       <ReminderModal
         isOpen={isReminderOpen}
         onClose={() => setIsReminderOpen(false)}
@@ -92,7 +92,7 @@ export function BlockEditor({ document: workspaceDocument }: BlockEditorProps) {
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgb(var(--border))] pb-5">
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Input
             className="w-20 text-center"
             maxLength={8}
@@ -100,7 +100,7 @@ export function BlockEditor({ document: workspaceDocument }: BlockEditorProps) {
             value={icon}
           />
           <Input
-            className="w-[320px]"
+            className="w-full sm:w-[320px]"
             onChange={(event) => setTitle(event.target.value)}
             value={title}
           />

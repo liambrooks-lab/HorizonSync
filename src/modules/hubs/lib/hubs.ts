@@ -2,6 +2,11 @@ import { randomUUID } from "crypto";
 import { ChannelType, MemberRole } from "@prisma/client";
 
 import { db } from "@/shared/lib/db";
+import {
+  sanitizeOptionalPlainText,
+  sanitizeOptionalUrl,
+  sanitizePlainText,
+} from "@/shared/lib/security";
 import { slugify } from "@/shared/lib/utils";
 
 const DEFAULT_CHANNEL_BLUEPRINTS = [
@@ -450,9 +455,12 @@ export async function createHubMessage(input: {
   fileType?: string | null;
   fileSize?: number | null;
 }) {
-  const trimmedContent = input.content.trim();
+  const trimmedContent = sanitizePlainText(input.content, 4000);
+  const fileUrl = sanitizeOptionalUrl(input.fileUrl);
+  const fileName = sanitizeOptionalPlainText(input.fileName, 255);
+  const fileType = sanitizeOptionalPlainText(input.fileType, 255);
 
-  if (!trimmedContent && !input.fileUrl) {
+  if (!trimmedContent && !fileUrl) {
     throw new Error("A message must contain text or an attachment.");
   }
 
@@ -475,9 +483,9 @@ export async function createHubMessage(input: {
       data: {
         channelId: channel.id,
         content: trimmedContent,
-        fileUrl: input.fileUrl,
-        fileName: input.fileName,
-        fileType: input.fileType,
+        fileUrl,
+        fileName,
+        fileType,
         fileSize: input.fileSize ?? null,
         memberId: workspace.currentMember.id,
         userId: workspace.currentMember.userId,
@@ -554,9 +562,9 @@ export async function createHubMessage(input: {
   const message = await db.message.create({
     data: {
       content: trimmedContent,
-      fileUrl: input.fileUrl,
-      fileName: input.fileName,
-      fileType: input.fileType,
+      fileUrl,
+      fileName,
+      fileType,
       fileSize: input.fileSize ?? null,
       memberId: workspace.currentMember.id,
       userId: workspace.currentMember.userId,

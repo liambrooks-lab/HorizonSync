@@ -7,11 +7,13 @@ import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
 import { z } from "zod";
 
+import { sendLoginNotificationAction } from "@/modules/auth/actions/notification.actions";
 import { db } from "@/shared/lib/db";
+import { normalizeEmailAddress } from "@/shared/lib/security";
 import { slugify } from "@/shared/lib/utils";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform(normalizeEmailAddress),
   password: z.string().min(8),
 });
 
@@ -192,6 +194,20 @@ export const authOptions: NextAuthOptions = {
           username: await generateUniqueUsername(user.name ?? user.email),
           socialLinks: ["", "", "", ""],
         },
+      });
+    },
+    async signIn({ user, account }) {
+      if (!user.email) {
+        return;
+      }
+
+      void sendLoginNotificationAction({
+        email: user.email,
+        name: user.name,
+        provider: account?.provider ?? null,
+        timestampIso: new Date().toISOString(),
+      }).catch((error) => {
+        console.error("Failed to send HorizonSync login notification.", error);
       });
     },
   },

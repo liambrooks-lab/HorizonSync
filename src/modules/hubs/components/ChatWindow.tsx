@@ -44,7 +44,7 @@ export function ChatWindow({
     : false;
 
   return (
-    <section className="flex h-[calc(100vh-10.25rem)] min-h-[620px] flex-1 flex-col overflow-hidden rounded-[30px] border border-[rgb(var(--border))] bg-[rgba(var(--surface),0.9)] shadow-[0_34px_120px_-64px_rgba(12,24,68,0.8)] backdrop-blur-xl">
+    <section className="panel-surface flex h-[calc(100vh-14rem)] min-h-[560px] flex-1 flex-col overflow-hidden rounded-[30px] border border-[rgb(var(--border))] backdrop-blur-xl sm:h-[calc(100vh-13rem)] lg:h-[calc(100vh-10.5rem)]">
       <ChatHeader
         connectionState={connectionState}
         descriptor={descriptor}

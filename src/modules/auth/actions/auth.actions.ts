@@ -4,11 +4,12 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 import { db } from "@/shared/lib/db";
+import { normalizeEmailAddress, sanitizePlainText } from "@/shared/lib/security";
 import { slugify } from "@/shared/lib/utils";
 
 const registerSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.string().trim().email(),
+  name: z.string().trim().min(2).max(80).transform((value) => sanitizePlainText(value, 80)),
+  email: z.string().trim().email().transform(normalizeEmailAddress),
   password: z.string().min(8).max(128),
 });
 

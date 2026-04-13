@@ -1,7 +1,7 @@
 "use client";
 
+import { FilePlus2, FolderPlus } from "lucide-react";
 import Link from "next/link";
-import { FolderPlus, FilePlus2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -15,10 +15,16 @@ import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
 
 type MySpaceSidebarProps = {
+  className?: string;
   folders: SerializedWorkspaceFolder[];
+  onNavigate?: () => void;
 };
 
-export function MySpaceSidebar({ folders }: MySpaceSidebarProps) {
+export function MySpaceSidebar({
+  className,
+  folders,
+  onNavigate,
+}: MySpaceSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [folderName, setFolderName] = useState("");
@@ -26,7 +32,12 @@ export function MySpaceSidebar({ folders }: MySpaceSidebarProps) {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(folders[0]?.id ?? null);
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-r border-[rgb(var(--border))] bg-[rgba(var(--surface),0.82)] backdrop-blur-xl">
+    <aside
+      className={cn(
+        "flex w-[320px] shrink-0 flex-col border-r border-[rgb(var(--border))] bg-[rgba(var(--surface),0.82)] backdrop-blur-xl",
+        className,
+      )}
+    >
       <div className="border-b border-[rgb(var(--border))] px-5 py-5">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[rgb(var(--muted-foreground))]">
           My Space
@@ -80,6 +91,7 @@ export function MySpaceSidebar({ folders }: MySpaceSidebarProps) {
               setDocumentName("");
               router.push(`/myspace/${result.documentId}`);
               router.refresh();
+              onNavigate?.();
             }}
             size="icon"
             type="button"
@@ -105,6 +117,7 @@ export function MySpaceSidebar({ folders }: MySpaceSidebarProps) {
               >
                 {folder.name}
               </button>
+
               <div className="mt-2 space-y-1">
                 {folder.documents.map((document) => {
                   const isActive = pathname === `/myspace/${document.id}`;
@@ -119,8 +132,9 @@ export function MySpaceSidebar({ folders }: MySpaceSidebarProps) {
                       )}
                       href={`/myspace/${document.id}`}
                       key={document.id}
+                      onClick={onNavigate}
                     >
-                      <span>{document.icon ?? "📄"}</span>
+                      <span>{document.icon ?? "DOC"}</span>
                       <span className="truncate">{document.title}</span>
                     </Link>
                   );

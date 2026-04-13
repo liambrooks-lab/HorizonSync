@@ -12,7 +12,7 @@ export function ProfileHeader({
   image,
 }: ProfileHeaderProps) {
   return (
-    <section className="rounded-[28px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-8">
+    <section className="panel-surface rounded-[28px] border border-[rgb(var(--border))] p-6 sm:p-8">
       <div className="flex flex-col gap-6 md:flex-row md:items-center">
         {image ? (
           <img

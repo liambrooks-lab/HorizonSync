@@ -11,6 +11,7 @@ import {
 import type { SerializedPost } from "@/modules/global/lib/posts";
 import { FeedComposer } from "@/modules/global/components/FeedComposer";
 import { PostCard } from "@/modules/global/components/PostCard";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 
 type FeedListProps = {
   initialCursor: string | null;
@@ -257,8 +258,22 @@ export function FeedList({ initialCursor, initialPosts, viewer }: FeedListProps)
 
       <div className="flex flex-col items-center gap-3 py-4" ref={sentinelRef}>
         {isLoadingMore ? (
-          <div className="w-full rounded-[24px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 text-center text-sm text-[rgb(var(--muted-foreground))]">
-            Loading more posts...
+          <div className="w-full space-y-4">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div
+                className="rounded-[24px] border border-[rgb(var(--border))] bg-[rgba(var(--surface),0.88)] p-5"
+                key={index}
+              >
+                <div className="flex gap-4">
+                  <Skeleton className="h-12 w-12 rounded-[20px]" />
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-4/5" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : null}
 

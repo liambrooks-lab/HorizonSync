@@ -4,15 +4,15 @@ import { cn } from "@/shared/lib/utils";
 
 const variantStyles = {
   default:
-    "bg-[rgb(var(--accent-strong))] text-white shadow-[0_18px_50px_-24px_rgba(64,119,255,0.9)] hover:bg-[rgb(var(--accent-strong))/0.9]",
+    "bg-[rgb(var(--accent-strong))] text-white shadow-[0_22px_60px_-30px_rgba(var(--accent-strong),0.85)] hover:-translate-y-0.5 hover:opacity-95",
   secondary:
-    "bg-[rgb(var(--surface-elevated))] text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-elevated))/0.85]",
+    "bg-[rgba(var(--surface-elevated),0.92)] text-[rgb(var(--foreground))] hover:-translate-y-0.5 hover:bg-[rgba(var(--surface-contrast),0.88)]",
   outline:
-    "border border-[rgb(var(--border))] bg-transparent text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-elevated))]",
+    "border border-[rgb(var(--border))] bg-transparent text-[rgb(var(--foreground))] hover:-translate-y-0.5 hover:bg-[rgba(var(--surface-elevated),0.72)]",
   ghost:
-    "bg-transparent text-[rgb(var(--foreground))] hover:bg-[rgb(var(--surface-elevated))]",
+    "bg-transparent text-[rgb(var(--foreground))] hover:bg-[rgba(var(--surface-elevated),0.72)]",
   danger:
-    "bg-rose-500 text-white hover:bg-rose-400",
+    "bg-[rgb(var(--danger))] text-white hover:-translate-y-0.5 hover:opacity-95",
 } as const;
 
 const sizeStyles = {
@@ -35,7 +35,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         className={cn(
-          "inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition duration-200",
+          "inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition duration-200 ease-out",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--background))]",
           "disabled:pointer-events-none disabled:opacity-60",
           variantStyles[variant],

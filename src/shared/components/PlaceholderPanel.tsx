@@ -14,7 +14,7 @@ export function PlaceholderPanel({
   return (
     <section
       className={cn(
-        "rounded-[28px] border border-[rgb(var(--border))] bg-[linear-gradient(180deg,rgba(var(--surface-elevated),0.95),rgba(var(--surface),0.92))] p-8 shadow-[0_30px_80px_-48px_rgba(12,24,68,0.7)]",
+        "panel-elevated rounded-[28px] border border-[rgb(var(--border))] p-6 sm:p-8",
         className,
       )}
     >

@@ -6,6 +6,7 @@ import { type ChangeEvent, type KeyboardEvent, useRef, useState } from "react";
 import type { SerializedHubMessage } from "@/modules/hubs/lib/hubs";
 import { useUploadThing } from "@/shared/lib/uploadthing-client";
 import { Button } from "@/shared/components/ui/button";
+import { useToast } from "@/shared/components/ui/toast";
 
 type ChatInputProps = {
   disabled: boolean;
@@ -24,6 +25,7 @@ export function ChatInput({
   onMessageCreated,
   onTyping,
 }: ChatInputProps) {
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -86,6 +88,14 @@ export function ChatInput({
         fileInputRef.current.value = "";
       }
     } catch (submissionError) {
+      showToast({
+        title: "Message not sent",
+        description:
+          submissionError instanceof Error
+            ? submissionError.message
+            : "Unable to send the message.",
+        variant: "error",
+      });
       setError(
         submissionError instanceof Error
           ? submissionError.message
@@ -108,8 +118,8 @@ export function ChatInput({
   }
 
   return (
-    <div className="border-t border-[rgb(var(--border))] px-6 py-5">
-      <div className="rounded-[28px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-4">
+    <div className="border-t border-[rgb(var(--border))] px-4 py-4 sm:px-6 sm:py-5">
+      <div className="rounded-[28px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3 sm:p-4">
         {selectedFile ? (
           <div className="mb-3 flex items-center justify-between rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-elevated))] px-3 py-2">
             <div className="min-w-0">

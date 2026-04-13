@@ -5,47 +5,73 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 242 247 255;
-    --surface: 255 255 255;
-    --surface-elevated: 231 240 255;
-    --foreground: 18 32 64;
-    --muted-foreground: 89 107 146;
-    --accent: 116 180 255;
-    --accent-strong: 54 123 255;
-    --border: 198 215 245;
-    --ring: 54 123 255;
+  :root,
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --background: 9 11 18;
+    --background-secondary: 14 17 26;
+    --surface: 19 23 34;
+    --surface-elevated: 27 32 46;
+    --surface-contrast: 39 45 64;
+    --foreground: 244 245 255;
+    --muted-foreground: 160 168 196;
+    --accent: 168 85 247;
+    --accent-soft: 196 141 255;
+    --accent-strong: 139 92 246;
+    --border: 63 69 92;
+    --ring: 168 85 247;
+    --success: 34 197 94;
+    --warning: 245 158 11;
+    --danger: 244 63 94;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: 10 12 27;
-      --surface: 17 20 42;
-      --surface-elevated: 30 28 66;
-      --foreground: 236 240 255;
-      --muted-foreground: 154 162 204;
-      --accent: 165 138 255;
-      --accent-strong: 114 89 255;
-      --border: 58 60 108;
-      --ring: 165 138 255;
-    }
+  [data-theme="light"] {
+    color-scheme: light;
+    --background: 244 247 252;
+    --background-secondary: 236 241 248;
+    --surface: 255 255 255;
+    --surface-elevated: 232 240 251;
+    --surface-contrast: 214 228 246;
+    --foreground: 17 31 58;
+    --muted-foreground: 89 105 132;
+    --accent: 104 168 255;
+    --accent-soft: 145 198 255;
+    --accent-strong: 43 117 255;
+    --border: 203 216 234;
+    --ring: 43 117 255;
+    --success: 22 163 74;
+    --warning: 217 119 6;
+    --danger: 225 29 72;
   }
 
   * {
     @apply border-[rgb(var(--border))];
+    scrollbar-color: rgba(var(--accent-strong), 0.65) transparent;
   }
 
   html {
     scroll-behavior: smooth;
   }
 
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at top left, rgba(var(--accent), 0.18), transparent 24%),
+      radial-gradient(circle at top right, rgba(var(--accent-strong), 0.12), transparent 22%),
+      radial-gradient(circle at bottom left, rgba(var(--accent-soft), 0.14), transparent 28%);
+    z-index: -1;
+  }
+
   body {
     background:
-      radial-gradient(circle at top left, rgba(var(--accent), 0.18), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(var(--accent-strong), 0.12), transparent 30%),
+      linear-gradient(180deg, rgba(var(--background-secondary), 0.92), rgba(var(--background), 1)),
       rgb(var(--background));
     color: rgb(var(--foreground));
     font-family: var(--font-body), sans-serif;
+    text-rendering: optimizeLegibility;
   }
 
   h1,
@@ -55,5 +81,82 @@
   h5,
   h6 {
     font-family: var(--font-display), sans-serif;
+  }
+
+  ::selection {
+    background: rgba(var(--accent-strong), 0.32);
+    color: rgb(var(--foreground));
+  }
+
+  a,
+  button,
+  input,
+  textarea {
+    transition:
+      color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(var(--surface-contrast), 0.9);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .panel-surface {
+    background:
+      linear-gradient(180deg, rgba(var(--surface), 0.92), rgba(var(--surface), 0.84));
+    box-shadow: 0 32px 100px -56px rgba(3, 8, 20, 0.82);
+  }
+
+  .panel-elevated {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(var(--surface-elevated), 0.95),
+        rgba(var(--surface), 0.88)
+      );
+  }
+
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: rgba(var(--surface-elevated), 0.9);
+  }
+
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.18),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }

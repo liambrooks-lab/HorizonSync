@@ -6,9 +6,14 @@ import { z } from "zod";
 import { getSerializedPostById } from "@/modules/global/lib/posts";
 import { getCurrentUser } from "@/shared/lib/auth";
 import { db } from "@/shared/lib/db";
+import {
+  sanitizeOptionalPlainText,
+  sanitizeOptionalUrl,
+  sanitizePlainText,
+} from "@/shared/lib/security";
 
 const createPostSchema = z.object({
-  content: z.string().trim().max(2000),
+  content: z.string().trim().max(2000).transform((value) => sanitizePlainText(value, 2000)),
   mediaUrl: z.string().url().nullable().optional(),
   mediaType: z.string().max(255).nullable().optional(),
   mediaName: z.string().max(255).nullable().optional(),
@@ -16,7 +21,7 @@ const createPostSchema = z.object({
 
 const commentSchema = z.object({
   postId: z.string().cuid(),
-  text: z.string().trim().min(1).max(500),
+  text: z.string().trim().min(1).max(500).transform((value) => sanitizePlainText(value, 500)),
 });
 
 async function requireViewer() {
@@ -46,9 +51,9 @@ export async function createPostAction(input: {
     data: {
       authorId: viewer.id,
       content: parsedInput.content,
-      mediaUrl: parsedInput.mediaUrl ?? null,
-      mediaType: parsedInput.mediaType ?? null,
-      mediaName: parsedInput.mediaName ?? null,
+      mediaUrl: sanitizeOptionalUrl(parsedInput.mediaUrl),
+      mediaType: sanitizeOptionalPlainText(parsedInput.mediaType, 255),
+      mediaName: sanitizeOptionalPlainText(parsedInput.mediaName, 255),
     },
   });
 
