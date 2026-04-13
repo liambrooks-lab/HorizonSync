@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createHubMessage } from "@/modules/hubs/lib/hubs";
+import { createHubMessage, getMessageThreadChannelName } from "@/modules/hubs/lib/hubs";
 import { getSession } from "@/shared/lib/auth";
-import { isPusherConfigured, pusherServer } from "@/shared/lib/pusher";
 import { assertSameOriginRequest } from "@/shared/lib/security";
+import { isPusherConfigured, pusherServer } from "@/shared/lib/pusher";
 
 const messageSchema = z.object({
   serverId: z.string().cuid(),
   routeId: z.string().min(1),
   content: z.string().max(4000).default(""),
+  forwardedFromId: z.string().cuid().nullable().optional(),
+  threadId: z.string().cuid().nullable().optional(),
   attachment: z
     .object({
       url: z.string().url(),
@@ -27,8 +29,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Invalid request origin.",
+        error: error instanceof Error ? error.message : "Invalid request origin.",
       },
       { status: 403 },
     );
@@ -52,19 +53,27 @@ export async function POST(request: Request) {
   try {
     const result = await createHubMessage({
       content: parsedBody.data.content,
-      routeId: parsedBody.data.routeId,
-      serverId: parsedBody.data.serverId,
-      userId: session.user.id,
       fileName: parsedBody.data.attachment?.name ?? null,
       fileSize: parsedBody.data.attachment?.size ?? null,
       fileType: parsedBody.data.attachment?.type ?? null,
       fileUrl: parsedBody.data.attachment?.url ?? null,
+      forwardedFromId: parsedBody.data.forwardedFromId ?? null,
+      routeId: parsedBody.data.routeId,
+      serverId: parsedBody.data.serverId,
+      threadId: parsedBody.data.threadId ?? null,
+      userId: session.user.id,
     });
 
     if (isPusherConfigured && pusherServer) {
       await pusherServer.trigger(result.realtimeChannelName, "message:new", {
         message: result.message,
       });
+
+      if (parsedBody.data.threadId) {
+        await pusherServer.trigger(getMessageThreadChannelName(parsedBody.data.threadId), "message:new", {
+          message: result.message,
+        });
+      }
     }
 
     return NextResponse.json({ message: result.message });

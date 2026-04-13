@@ -1,6 +1,14 @@
 "use client";
 
-import { Bookmark, Heart, MessageCircle, Send } from "lucide-react";
+import {
+  Archive,
+  Bookmark,
+  Heart,
+  MessageCircle,
+  Quote,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 
 import type { SerializedPost } from "@/modules/global/lib/posts";
@@ -9,10 +17,14 @@ import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
 
 type PostCardProps = {
-  post: SerializedPost;
+  onArchive: (postId: string) => Promise<void>;
+  onBookmark: (postId: string) => Promise<void>;
   onComment: (postId: string, text: string) => Promise<void>;
+  onDelete: (postId: string) => Promise<void>;
   onLike: (postId: string) => Promise<void>;
-  onSave: (postId: string) => Promise<void>;
+  onQuote: (post: SerializedPost) => void;
+  onVotePoll: (pollId: string, optionIds: string[]) => Promise<void>;
+  post: SerializedPost;
 };
 
 function formatTimestamp(timestamp: string) {
@@ -24,7 +36,104 @@ function formatTimestamp(timestamp: string) {
   });
 }
 
-export function PostCard({ post, onComment, onLike, onSave }: PostCardProps) {
+function PollCard({
+  onVote,
+  post,
+}: {
+  onVote: (pollId: string, optionIds: string[]) => Promise<void>;
+  post: SerializedPost;
+}) {
+  const poll = post.poll;
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(
+    poll?.options.filter((option) => option.hasVoted).map((option) => option.id) ?? [],
+  );
+  const [isVoting, setIsVoting] = useState(false);
+
+  if (!poll) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 rounded-[24px] border border-[rgb(var(--border))] bg-[rgba(var(--surface-elevated),0.78)] p-4">
+      {poll.question ? (
+        <p className="text-sm font-semibold text-[rgb(var(--foreground))]">{poll.question}</p>
+      ) : null}
+
+      <div className="mt-3 space-y-3">
+        {poll.options.map((option) => {
+          const isSelected = selectedOptions.includes(option.id);
+
+          return (
+            <button
+              className={cn(
+                "relative w-full overflow-hidden rounded-[20px] border px-4 py-3 text-left",
+                isSelected
+                  ? "border-[rgb(var(--accent-strong))] text-[rgb(var(--foreground))]"
+                  : "border-[rgb(var(--border))] text-[rgb(var(--muted-foreground))]",
+              )}
+              key={option.id}
+              onClick={() => {
+                setSelectedOptions((currentOptions) => {
+                  if (poll.allowMultipleVotes) {
+                    return currentOptions.includes(option.id)
+                      ? currentOptions.filter((currentOptionId) => currentOptionId !== option.id)
+                      : [...currentOptions, option.id];
+                  }
+
+                  return [option.id];
+                });
+              }}
+              type="button"
+            >
+              <div
+                className="absolute inset-y-0 left-0 bg-[rgba(var(--accent-strong),0.16)]"
+                style={{ width: `${option.percentage}%` }}
+              />
+              <div className="relative flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">{option.text}</span>
+                <span className="text-xs font-semibold">
+                  {option.voteCount} votes · {option.percentage}%
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-[0.2em] text-[rgb(var(--muted-foreground))]">
+          {poll.totalVotes} total votes
+        </p>
+        <Button
+          disabled={selectedOptions.length === 0 || isVoting}
+          onClick={async () => {
+            setIsVoting(true);
+            try {
+              await onVote(poll.id, selectedOptions);
+            } finally {
+              setIsVoting(false);
+            }
+          }}
+          type="button"
+          variant="secondary"
+        >
+          Vote
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function PostCard({
+  onArchive,
+  onBookmark,
+  onComment,
+  onDelete,
+  onLike,
+  onQuote,
+  onVotePoll,
+  post,
+}: PostCardProps) {
   const [commentText, setCommentText] = useState("");
   const [isCommenting, setIsCommenting] = useState(false);
 
@@ -46,23 +155,52 @@ export function PostCard({ post, onComment, onLike, onSave }: PostCardProps) {
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-[rgb(var(--foreground))]">
-              {post.author.name}
-            </p>
-            {post.author.username ? (
-              <span className="text-xs text-[rgb(var(--accent-strong))]">
-                @{post.author.username}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-[rgb(var(--foreground))]">
+                {post.author.name}
+              </p>
+              {post.author.username ? (
+                <span className="text-xs text-[rgb(var(--accent-strong))]">
+                  @{post.author.username}
+                </span>
+              ) : null}
+              <span className="text-xs text-[rgb(var(--muted-foreground))]">
+                {formatTimestamp(post.createdAt)}
               </span>
+            </div>
+
+            {post.canManage ? (
+              <div className="flex items-center gap-2">
+                <Button onClick={() => void onArchive(post.id)} size="sm" variant="ghost">
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive
+                </Button>
+                <Button onClick={() => void onDelete(post.id)} size="sm" variant="ghost">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </div>
             ) : null}
-            <span className="text-xs text-[rgb(var(--muted-foreground))]">
-              {formatTimestamp(post.createdAt)}
-            </span>
           </div>
 
           <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[rgb(var(--foreground))]">
             {post.content}
           </p>
+
+          {post.quotePost ? (
+            <div className="mt-4 rounded-[24px] border border-[rgb(var(--border))] bg-[rgba(var(--surface-elevated),0.72)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[rgb(var(--muted-foreground))]">
+                Quoted
+              </p>
+              <p className="mt-2 text-sm font-semibold text-[rgb(var(--foreground))]">
+                {post.quotePost.author.name}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[rgb(var(--muted-foreground))]">
+                {post.quotePost.content}
+              </p>
+            </div>
+          ) : null}
 
           {post.mediaUrl ? (
             isImage ? (
@@ -89,12 +227,14 @@ export function PostCard({ post, onComment, onLike, onSave }: PostCardProps) {
               </a>
             )
           ) : null}
+
+          <PollCard onVote={onVotePoll} post={post} />
         </div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button
-          className={cn(post.isLikedByViewer && "text-rose-200")}
+          className={cn(post.isLikedByViewer && "text-rose-300")}
           onClick={() => void onLike(post.id)}
           type="button"
           variant="ghost"
@@ -107,13 +247,19 @@ export function PostCard({ post, onComment, onLike, onSave }: PostCardProps) {
           {post.commentCount}
         </Button>
         <Button
-          className={cn(post.isSavedByViewer && "text-amber-200")}
-          onClick={() => void onSave(post.id)}
+          className={cn(post.isBookmarkedByViewer && "text-amber-200")}
+          onClick={() => void onBookmark(post.id)}
           type="button"
           variant="ghost"
         >
-          <Bookmark className={cn("mr-2 h-4 w-4", post.isSavedByViewer && "fill-current")} />
-          {post.saveCount}
+          <Bookmark
+            className={cn("mr-2 h-4 w-4", post.isBookmarkedByViewer && "fill-current")}
+          />
+          {post.bookmarkCount}
+        </Button>
+        <Button onClick={() => onQuote(post)} type="button" variant="ghost">
+          <Quote className="mr-2 h-4 w-4" />
+          Quote
         </Button>
       </div>
 

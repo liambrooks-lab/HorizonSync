@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getServerPresenceChannelName } from "@/modules/hubs/lib/hubs";
+import { getMessageThreadChannelName, getServerPresenceChannelName } from "@/modules/hubs/lib/hubs";
 import { getSession } from "@/shared/lib/auth";
 import { db } from "@/shared/lib/db";
 import { isPusherConfigured, pusherServer } from "@/shared/lib/pusher";
@@ -15,6 +15,10 @@ function isChannelThreadChannel(channelName: string) {
 
 function isDirectThreadChannel(channelName: string) {
   return channelName.startsWith("private-thread-dm-");
+}
+
+function isMessageRepliesChannel(channelName: string) {
+  return channelName.startsWith("private-thread-replies-");
 }
 
 export async function POST(request: Request) {
@@ -131,6 +135,36 @@ export async function POST(request: Request) {
     return NextResponse.json(
       pusherServer.authorizeChannel(socketId, channelName),
     );
+  }
+
+  if (isMessageRepliesChannel(channelName)) {
+    const threadId = channelName.replace(getMessageThreadChannelName(""), "");
+    const thread = await db.thread.findUnique({
+      where: { id: threadId },
+      select: {
+        serverId: true,
+      },
+    });
+
+    if (!thread) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const membership = await db.member.findUnique({
+      where: {
+        userId_serverId: {
+          userId: session.user.id,
+          serverId: thread.serverId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    return NextResponse.json(pusherServer.authorizeChannel(socketId, channelName));
   }
 
   return NextResponse.json(

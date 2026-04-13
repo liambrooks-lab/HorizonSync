@@ -31,15 +31,19 @@ model User {
   posts         Post[]
   comments      Comment[]
   likes         Like[]
-  savedPosts    SavedPost[]
+  bookmarks     Bookmark[]
+  pollVotes     PollVote[]
   memberships   Member[]
   ownedServers  Server[]   @relation("ServerOwner")
   channels      Channel[]
   messages      Message[]
+  reactions     Reaction[]
+  createdThreads Thread[]  @relation("ThreadCreator")
   directMessageConversationsAsOne DirectMessageConversation[] @relation("DirectMessageMemberOneUser")
   directMessageConversationsAsTwo DirectMessageConversation[] @relation("DirectMessageMemberTwoUser")
   documentFolders DocumentFolder[]
   documents     Document[]
+  workspaceViews WorkspaceView[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -87,22 +91,29 @@ model VerificationToken {
 // 2. THE GLOBAL FEED (Twitter Features)
 // ==========================================
 model Post {
-  id        String    @id @default(cuid())
-  content   String    @db.Text
-  mediaUrl  String?   // For images or videos
-  mediaType String?
-  mediaName String?
-  authorId  String
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  content      String    @db.Text
+  mediaUrl     String?   // For images or videos
+  mediaType    String?
+  mediaName    String?
+  authorId     String
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  isArchived   Boolean   @default(false)
+  quotePostId  String?
+  quotedPost   Post?     @relation("QuotedPost", fields: [quotePostId], references: [id], onDelete: SetNull)
+  quotedBy     Post[]    @relation("QuotedPost")
   
-  comments  Comment[]
-  likes     Like[]
-  saves     SavedPost[]
+  comments     Comment[]
+  likes        Like[]
+  bookmarks    Bookmark[]
+  poll         Poll?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([authorId])
+  @@index([quotePostId])
+  @@index([isArchived])
 }
 
 model Comment {
@@ -129,7 +140,7 @@ model Like {
   @@index([userId])
 }
 
-model SavedPost {
+model Bookmark {
   id        String   @id @default(cuid())
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -138,6 +149,50 @@ model SavedPost {
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
+  @@index([userId])
+}
+
+model Poll {
+  id                 String       @id @default(cuid())
+  postId             String       @unique
+  post               Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  question           String?      @db.Text
+  allowMultipleVotes Boolean      @default(false)
+  expiresAt          DateTime?
+  options            PollOption[]
+  votes              PollVote[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([expiresAt])
+}
+
+model PollOption {
+  id        String     @id @default(cuid())
+  pollId     String
+  poll       Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text       String
+  position   Int        @default(0)
+  votes      PollVote[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([pollId, position])
+  @@index([pollId])
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  pollId     String
+  poll       Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId   String
+  option     PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+
+  @@unique([optionId, userId])
+  @@index([pollId, userId])
   @@index([userId])
 }
 
@@ -154,6 +209,7 @@ model Server {
   owner      User      @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members    Member[]
   channels   Channel[]
+  threads    Thread[]
   directMessageConversations DirectMessageConversation[]
 
   createdAt  DateTime  @default(now())
@@ -180,6 +236,7 @@ model Member {
   updatedAt DateTime   @updatedAt
 
   messages  Message[]
+  reactions Reaction[]
   directMessageConversationsAsOne DirectMessageConversation[] @relation("DirectMessageMemberOne")
   directMessageConversationsAsTwo DirectMessageConversation[] @relation("DirectMessageMemberTwo")
 
@@ -206,6 +263,7 @@ model Channel {
   server    Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
   
   messages  Message[]
+  threads   Thread[]
 
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -228,6 +286,7 @@ model DirectMessageConversation {
   userTwoId   String
   userTwo     User     @relation("DirectMessageMemberTwoUser", fields: [userTwoId], references: [id], onDelete: Cascade)
   messages    Message[]
+  threads     Thread[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -239,28 +298,77 @@ model DirectMessageConversation {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  fileUrl   String?
-  fileName  String?
-  fileType  String?
-  fileSize  Int?
-  memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channelId String?
-  channel   Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  directMessageConversationId String?
-  directMessageConversation   DirectMessageConversation? @relation(fields: [directMessageConversationId], references: [id], onDelete: Cascade)
+  id                            String   @id @default(cuid())
+  content                       String   @db.Text
+  fileUrl                       String?
+  fileName                      String?
+  fileType                      String?
+  fileSize                      Int?
+  memberId                      String
+  member                        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  userId                        String
+  user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId                     String?
+  channel                       Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  directMessageConversationId   String?
+  directMessageConversation     DirectMessageConversation? @relation(fields: [directMessageConversationId], references: [id], onDelete: Cascade)
+  isEdited                      Boolean   @default(false)
+  forwardedFromId               String?
+  forwardedFrom                 Message?  @relation("ForwardedMessageSource", fields: [forwardedFromId], references: [id], onDelete: SetNull)
+  forwardedMessages             Message[] @relation("ForwardedMessageSource")
+  threadId                      String?
+  thread                        Thread?   @relation("ThreadMessages", fields: [threadId], references: [id], onDelete: Cascade)
+  rootThread                    Thread?   @relation("ThreadRootMessage")
+  reactions                     Reaction[]
 
-  deleted   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  deleted                       Boolean  @default(false)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
 
   @@index([channelId])
   @@index([directMessageConversationId])
   @@index([memberId])
+  @@index([forwardedFromId])
+  @@index([threadId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, memberId, emoji])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model Thread {
+  id                            String   @id @default(cuid())
+  title                         String?
+  serverId                      String
+  server                        Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channelId                     String?
+  channel                       Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  directMessageConversationId   String?
+  directMessageConversation     DirectMessageConversation? @relation(fields: [directMessageConversationId], references: [id], onDelete: Cascade)
+  rootMessageId                 String   @unique
+  rootMessage                   Message  @relation("ThreadRootMessage", fields: [rootMessageId], references: [id], onDelete: Cascade)
+  creatorId                     String
+  creator                       User     @relation("ThreadCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  messages                      Message[] @relation("ThreadMessages")
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  @@index([serverId])
+  @@index([channelId])
+  @@index([directMessageConversationId])
+  @@index([creatorId])
 }
 
 // ==========================================
@@ -274,6 +382,7 @@ model DocumentFolder {
   userId    String
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents Document[]
+  workspaceViews WorkspaceView[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -289,6 +398,13 @@ model Document {
   coverImageUrl String?
   isArchived  Boolean  @default(false)
   isPublished Boolean  @default(false) // Published documents can later surface globally.
+  parentId    String?
+  parent      Document? @relation("NestedDocuments", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Document[] @relation("NestedDocuments")
+  position    Int       @default(0)
+  status      String?
+  dueDate     DateTime?
+  metadata    Json?
 
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -301,6 +417,9 @@ model Document {
 
   @@index([userId])
   @@index([folderId])
+  @@index([parentId])
+  @@index([dueDate])
+  @@index([folderId, position])
 }
 
 model DocumentReminder {
@@ -317,4 +436,30 @@ model DocumentReminder {
 
   @@index([documentId])
   @@index([remindAt])
+}
+
+enum WorkspaceViewType {
+  LIST
+  TABLE
+  KANBAN
+  CALENDAR
+}
+
+model WorkspaceView {
+  id        String            @id @default(cuid())
+  name      String
+  type      WorkspaceViewType
+  position  Int               @default(0)
+  config    Json?
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId  String
+  folder    DocumentFolder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([folderId])
+  @@unique([folderId, name])
+  @@unique([folderId, position])
 }

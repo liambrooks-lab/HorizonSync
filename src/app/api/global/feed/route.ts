@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getPaginatedFeedPosts } from "@/modules/global/lib/posts";
+import { type FeedScope, getPaginatedFeedPosts } from "@/modules/global/lib/posts";
 import { getSession } from "@/shared/lib/auth";
 
 export async function GET(request: Request) {
@@ -12,8 +12,13 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const cursor = searchParams.get("cursor");
+  const scope = (searchParams.get("scope") ?? "all") as FeedScope;
 
-  const feed = await getPaginatedFeedPosts(session.user.id, cursor);
+  const feed = await getPaginatedFeedPosts(
+    session.user.id,
+    cursor,
+    scope === "bookmarks" ? "bookmarks" : "all",
+  );
 
   return NextResponse.json(feed);
 }

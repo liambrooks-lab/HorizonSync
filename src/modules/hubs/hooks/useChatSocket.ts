@@ -115,6 +115,16 @@ export function useChatSocket({
       );
     });
 
+    threadChannel.bind("message:update", (event: { message: SerializedHubMessage }) => {
+      setMessages((currentMessages) =>
+        dedupeMessages(
+          currentMessages.map((currentMessage) =>
+            currentMessage.id === event.message.id ? event.message : currentMessage,
+          ),
+        ),
+      );
+    });
+
     threadChannel.bind(
       "client-typing",
       (event: { memberId: string; name: string }) => {
@@ -155,6 +165,16 @@ export function useChatSocket({
     setMessages((currentMessages) => dedupeMessages([...currentMessages, message]));
   }
 
+  function updateLocalMessage(message: SerializedHubMessage) {
+    setMessages((currentMessages) =>
+      dedupeMessages(
+        currentMessages.map((currentMessage) =>
+          currentMessage.id === message.id ? message : currentMessage,
+        ),
+      ),
+    );
+  }
+
   function announceTyping() {
     const now = Date.now();
 
@@ -181,6 +201,7 @@ export function useChatSocket({
     connectionState,
     messages,
     onlineMemberIds,
+    updateLocalMessage,
     typingUsers: Object.values(typingUsers),
   };
 }

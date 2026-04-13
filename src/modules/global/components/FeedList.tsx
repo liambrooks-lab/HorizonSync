@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useOptimistic, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
+  archivePostAction,
   createCommentAction,
   createPostAction,
+  deletePostAction,
+  toggleBookmarkPostAction,
   toggleLikeAction,
-  toggleSavePostAction,
+  votePollAction,
 } from "@/modules/global/actions/post.actions";
-import type { SerializedPost } from "@/modules/global/lib/posts";
+import type { FeedScope, SerializedPost, SerializedPostPreview } from "@/modules/global/lib/posts";
 import { FeedComposer } from "@/modules/global/components/FeedComposer";
 import { PostCard } from "@/modules/global/components/PostCard";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { useToast } from "@/shared/components/ui/toast";
 
 type FeedListProps = {
   initialCursor: string | null;
@@ -24,171 +28,217 @@ type FeedListProps = {
   };
 };
 
-type OptimisticAction =
-  | { type: "prepend"; post: SerializedPost }
-  | { type: "merge"; post: SerializedPost }
-  | { type: "toggle-like"; postId: string }
-  | { type: "toggle-save"; postId: string }
-  | {
-      type: "add-comment";
-      postId: string;
-      comment: SerializedPost["comments"][number];
-    };
-
-function reconcilePosts(
-  currentPosts: SerializedPost[],
-  action: OptimisticAction,
-): SerializedPost[] {
-  switch (action.type) {
-    case "prepend":
-      return [action.post, ...currentPosts];
-    case "merge":
-      return currentPosts.map((post) =>
-        post.id === action.post.id ? action.post : post,
-      );
-    case "toggle-like":
-      return currentPosts.map((post) =>
-        post.id === action.postId
-          ? {
-              ...post,
-              isLikedByViewer: !post.isLikedByViewer,
-              likeCount: post.likeCount + (post.isLikedByViewer ? -1 : 1),
-            }
-          : post,
-      );
-    case "toggle-save":
-      return currentPosts.map((post) =>
-        post.id === action.postId
-          ? {
-              ...post,
-              isSavedByViewer: !post.isSavedByViewer,
-              saveCount: post.saveCount + (post.isSavedByViewer ? -1 : 1),
-            }
-          : post,
-      );
-    case "add-comment":
-      return currentPosts.map((post) =>
-        post.id === action.postId
-          ? {
-              ...post,
-              commentCount: post.commentCount + 1,
-              comments: [action.comment, ...post.comments].slice(0, 3),
-            }
-          : post,
-      );
-    default:
-      return currentPosts;
+function replacePost(currentPosts: SerializedPost[], updatedPost: SerializedPost | null) {
+  if (!updatedPost) {
+    return currentPosts;
   }
+
+  return currentPosts.map((post) => (post.id === updatedPost.id ? updatedPost : post));
 }
 
 export function FeedList({ initialCursor, initialPosts, viewer }: FeedListProps) {
+  const { showToast } = useToast();
+  const [scope, setScope] = useState<FeedScope>("all");
   const [posts, setPosts] = useState(initialPosts);
   const [nextCursor, setNextCursor] = useState(initialCursor);
+  const [isLoadingScope, setIsLoadingScope] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [quoteTarget, setQuoteTarget] = useState<SerializedPostPreview | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const [optimisticPosts, applyOptimistic] = useOptimistic(posts, reconcilePosts);
+
+  useEffect(() => {
+    setPosts(initialPosts);
+    setNextCursor(initialCursor);
+  }, [initialCursor, initialPosts]);
+
+  async function fetchScope(nextScope: FeedScope) {
+    setIsLoadingScope(true);
+    setLoadError(null);
+
+    try {
+      const response = await fetch(`/api/global/feed?scope=${encodeURIComponent(nextScope)}`);
+      const payload = (await response.json()) as {
+        error?: string;
+        items?: SerializedPost[];
+        nextCursor?: string | null;
+      };
+
+      if (!response.ok || !payload.items) {
+        throw new Error(payload.error ?? "Unable to load the selected feed.");
+      }
+
+      setScope(nextScope);
+      setPosts(payload.items);
+      setNextCursor(payload.nextCursor ?? null);
+    } catch (error) {
+      setLoadError(
+        error instanceof Error ? error.message : "Unable to load the selected feed.",
+      );
+    } finally {
+      setIsLoadingScope(false);
+    }
+  }
 
   async function handleCreate(input: {
     content: string;
     mediaUrl?: string | null;
     mediaType?: string | null;
     mediaName?: string | null;
+    quotePostId?: string | null;
+    poll?: {
+      question?: string | null;
+      allowMultipleVotes?: boolean;
+      options: string[];
+    } | null;
   }) {
-    const temporaryPost: SerializedPost = {
-      id: `temp-${Date.now()}`,
-      content: input.content,
-      mediaUrl: input.mediaUrl ?? null,
-      mediaType: input.mediaType ?? null,
-      mediaName: input.mediaName ?? null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      likeCount: 0,
-      commentCount: 0,
-      saveCount: 0,
-      isLikedByViewer: false,
-      isSavedByViewer: false,
-      comments: [],
-      author: viewer,
-    };
+    const result = await createPostAction(input);
+    const persistedPost = result.post;
 
-    applyOptimistic({ type: "prepend", post: temporaryPost });
+    if (persistedPost && scope === "all") {
+      setPosts((currentPosts) => [persistedPost, ...currentPosts]);
+    }
 
-    try {
-      const result = await createPostAction(input);
-      const persistedPost = result.post;
-
-      if (persistedPost) {
-        setPosts((currentPosts) => [persistedPost, ...currentPosts]);
-      }
-    } catch (error) {
-      setPosts((currentPosts) => [...currentPosts]);
-      throw error;
+    if (scope === "bookmarks") {
+      await fetchScope("bookmarks");
     }
   }
 
   async function handleLike(postId: string) {
-    applyOptimistic({ type: "toggle-like", postId });
+    setPosts((currentPosts) =>
+      currentPosts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              isLikedByViewer: !post.isLikedByViewer,
+              likeCount: post.likeCount + (post.isLikedByViewer ? -1 : 1),
+            }
+          : post,
+      ),
+    );
 
     try {
       const result = await toggleLikeAction(postId);
-      const updatedPost = result.post;
-
-      if (updatedPost) {
-        setPosts((currentPosts) =>
-          currentPosts.map((post) => (post.id === postId ? updatedPost : post)),
-        );
-      }
+      setPosts((currentPosts) => replacePost(currentPosts, result.post));
     } catch {
-      setPosts((currentPosts) => [...currentPosts]);
+      await fetchScope(scope);
     }
   }
 
-  async function handleSave(postId: string) {
-    applyOptimistic({ type: "toggle-save", postId });
+  async function handleBookmark(postId: string) {
+    setPosts((currentPosts) =>
+      currentPosts
+        .map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                bookmarkCount:
+                  post.bookmarkCount + (post.isBookmarkedByViewer ? -1 : 1),
+                isBookmarkedByViewer: !post.isBookmarkedByViewer,
+              }
+            : post,
+        )
+        .filter((post) => (scope === "bookmarks" ? post.isBookmarkedByViewer : true)),
+    );
 
     try {
-      const result = await toggleSavePostAction(postId);
-      const updatedPost = result.post;
+      const result = await toggleBookmarkPostAction(postId);
 
-      if (updatedPost) {
-        setPosts((currentPosts) =>
-          currentPosts.map((post) => (post.id === postId ? updatedPost : post)),
-        );
+      if (scope === "bookmarks" && result.post && !result.post.isBookmarkedByViewer) {
+        setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+      } else {
+        setPosts((currentPosts) => replacePost(currentPosts, result.post));
       }
     } catch {
-      setPosts((currentPosts) => [...currentPosts]);
+      await fetchScope(scope);
     }
   }
 
   async function handleComment(postId: string, text: string) {
-    applyOptimistic({
-      type: "add-comment",
-      postId,
-      comment: {
-        id: `temp-comment-${Date.now()}`,
-        text,
-        createdAt: new Date().toISOString(),
-        author: viewer,
-      },
-    });
+    const optimisticComment = {
+      id: `temp-comment-${Date.now()}`,
+      text,
+      createdAt: new Date().toISOString(),
+      author: viewer,
+    };
+
+    setPosts((currentPosts) =>
+      currentPosts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              commentCount: post.commentCount + 1,
+              comments: [optimisticComment, ...post.comments].slice(0, 3),
+            }
+          : post,
+      ),
+    );
 
     try {
       const result = await createCommentAction({ postId, text });
-      const updatedPost = result.post;
-
-      if (updatedPost) {
-        setPosts((currentPosts) =>
-          currentPosts.map((post) => (post.id === postId ? updatedPost : post)),
-        );
-      }
+      setPosts((currentPosts) => replacePost(currentPosts, result.post));
     } catch {
-      setPosts((currentPosts) => [...currentPosts]);
+      await fetchScope(scope);
+    }
+  }
+
+  async function handleArchive(postId: string) {
+    const previousPosts = posts;
+    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+
+    try {
+      await archivePostAction(postId);
+      showToast({
+        title: "Post archived",
+        description: "The post has been removed from the active feed.",
+        variant: "success",
+      });
+    } catch (error) {
+      setPosts(previousPosts);
+      showToast({
+        title: "Archive failed",
+        description: error instanceof Error ? error.message : "Unable to archive the post.",
+        variant: "error",
+      });
+    }
+  }
+
+  async function handleDelete(postId: string) {
+    const previousPosts = posts;
+    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+
+    try {
+      await deletePostAction(postId);
+      showToast({
+        title: "Post deleted",
+        description: "The post has been permanently removed.",
+        variant: "success",
+      });
+    } catch (error) {
+      setPosts(previousPosts);
+      showToast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "Unable to delete the post.",
+        variant: "error",
+      });
+    }
+  }
+
+  async function handleVotePoll(pollId: string, optionIds: string[]) {
+    try {
+      const result = await votePollAction({ optionIds, pollId });
+      setPosts((currentPosts) => replacePost(currentPosts, result.post));
+    } catch (error) {
+      showToast({
+        title: "Poll vote failed",
+        description: error instanceof Error ? error.message : "Unable to register your vote.",
+        variant: "error",
+      });
     }
   }
 
   async function loadMorePosts() {
-    if (!nextCursor || isLoadingMore) {
+    if (!nextCursor || isLoadingMore || isLoadingScope) {
       return;
     }
 
@@ -197,7 +247,7 @@ export function FeedList({ initialCursor, initialPosts, viewer }: FeedListProps)
 
     try {
       const response = await fetch(
-        `/api/global/feed?cursor=${encodeURIComponent(nextCursor)}`,
+        `/api/global/feed?scope=${encodeURIComponent(scope)}&cursor=${encodeURIComponent(nextCursor)}`,
       );
       const payload = (await response.json()) as {
         error?: string;
@@ -210,13 +260,10 @@ export function FeedList({ initialCursor, initialPosts, viewer }: FeedListProps)
       }
 
       const nextItems = payload.items;
-
       setPosts((currentPosts) => [...currentPosts, ...nextItems]);
       setNextCursor(payload.nextCursor ?? null);
     } catch (error) {
-      setLoadError(
-        error instanceof Error ? error.message : "Unable to load more posts.",
-      );
+      setLoadError(error instanceof Error ? error.message : "Unable to load more posts.");
     } finally {
       setIsLoadingMore(false);
     }
@@ -238,23 +285,84 @@ export function FeedList({ initialCursor, initialPosts, viewer }: FeedListProps)
     observer.observe(sentinel);
 
     return () => observer.disconnect();
-  }, [isLoadingMore, nextCursor]);
+  }, [isLoadingMore, nextCursor, scope, isLoadingScope]);
 
   return (
     <div className="space-y-6">
-      <FeedComposer onCreate={handleCreate} />
-
-      <div className="space-y-5">
-        {optimisticPosts.map((post) => (
-          <PostCard
-            key={post.id}
-            onComment={handleComment}
-            onLike={handleLike}
-            onSave={handleSave}
-            post={post}
-          />
+      <div className="inline-flex rounded-full border border-[rgb(var(--border))] bg-[rgba(var(--surface-elevated),0.7)] p-1">
+        {([
+          { label: "All posts", value: "all" },
+          { label: "Bookmarks", value: "bookmarks" },
+        ] as const).map((tab) => (
+          <button
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              scope === tab.value
+                ? "bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                : "text-[rgb(var(--muted-foreground))]"
+            }`}
+            key={tab.value}
+            onClick={() => void fetchScope(tab.value)}
+            type="button"
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
+
+      <FeedComposer
+        onClearQuote={() => setQuoteTarget(null)}
+        onCreate={handleCreate}
+        quoteTarget={quoteTarget}
+      />
+
+      {isLoadingScope ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              className="rounded-[24px] border border-[rgb(var(--border))] bg-[rgba(var(--surface),0.88)] p-5"
+              key={index}
+            >
+              <div className="flex gap-4">
+                <Skeleton className="h-12 w-12 rounded-[20px]" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              onArchive={handleArchive}
+              onBookmark={handleBookmark}
+              onComment={handleComment}
+              onDelete={handleDelete}
+              onLike={handleLike}
+              onQuote={(quotedPost) => setQuoteTarget(quotedPost)}
+              onVotePoll={handleVotePoll}
+              post={post}
+            />
+          ))}
+        </div>
+      )}
+
+      {!isLoadingScope && posts.length === 0 ? (
+        <div className="rounded-[24px] border border-dashed border-[rgb(var(--border))] px-6 py-10 text-center">
+          <p className="text-lg font-semibold text-[rgb(var(--foreground))]">
+            {scope === "bookmarks" ? "No bookmarks yet" : "No posts yet"}
+          </p>
+          <p className="mt-2 text-sm text-[rgb(var(--muted-foreground))]">
+            {scope === "bookmarks"
+              ? "Bookmark posts to keep them close at hand."
+              : "Start the conversation with your first update."}
+          </p>
+        </div>
+      ) : null}
 
       <div className="flex flex-col items-center gap-3 py-4" ref={sentinelRef}>
         {isLoadingMore ? (
@@ -277,15 +385,11 @@ export function FeedList({ initialCursor, initialPosts, viewer }: FeedListProps)
           </div>
         ) : null}
 
-        {!nextCursor ? (
-          <div className="text-sm text-[rgb(var(--muted-foreground))]">
-            You are caught up.
-          </div>
+        {!nextCursor && posts.length > 0 ? (
+          <div className="text-sm text-[rgb(var(--muted-foreground))]">You are caught up.</div>
         ) : null}
 
-        {loadError ? (
-          <div className="text-sm text-rose-300">{loadError}</div>
-        ) : null}
+        {loadError ? <div className="text-sm text-rose-300">{loadError}</div> : null}
       </div>
     </div>
   );

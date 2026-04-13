@@ -13,6 +13,7 @@ type ChatInputProps = {
   placeholder: string;
   routeId: string;
   serverId: string;
+  threadId?: string | null;
   onMessageCreated: (message: SerializedHubMessage) => void;
   onTyping: () => void;
 };
@@ -22,6 +23,7 @@ export function ChatInput({
   placeholder,
   routeId,
   serverId,
+  threadId,
   onMessageCreated,
   onTyping,
 }: ChatInputProps) {
@@ -59,6 +61,7 @@ export function ChatInput({
         body: JSON.stringify({
           serverId,
           routeId,
+          threadId,
           content,
           attachment: uploadedFile
             ? {
