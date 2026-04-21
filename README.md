@@ -308,7 +308,7 @@ Potential future expansion areas:
 </p>
 
 <p align="center">
-  Product builder, full-stack engineer, and the creator behind HorizonSync.
+  Product builder, Full-stack Developer, AI Enthuiast and the creator behind HorizonSync.
 </p>
 
 <p align="center">
