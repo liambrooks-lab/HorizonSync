@@ -304,7 +304,7 @@ Potential future expansion areas:
 </p>
 
 <p align="center">
-  <strong>Crafted by Rudranarayan Jena</strong>
+  <strong>Crafted by MR. Rudranarayan Jena</strong>
 </p>
 
 <p align="center">
