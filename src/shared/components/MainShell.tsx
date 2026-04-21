@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
 import { FloatingAssistant } from "@/modules/ai/components/FloatingAssistant";
+import { BrandLogo, BrandWordmark } from "@/shared/components/BrandIdentity";
 import { MasterNavigation } from "@/shared/components/MasterNavigation";
 import { Drawer } from "@/shared/components/ui/drawer";
 import { PageTransition } from "@/shared/components/ui/page-transition";
@@ -54,13 +55,20 @@ export function MainShell({
               <Menu className="h-4 w-4" />
             </Button>
 
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[rgb(var(--muted-foreground))]">
-                Unified workspace
-              </p>
-              <h1 className="mt-1 text-xl font-semibold text-[rgb(var(--foreground))] sm:text-2xl">
-                HorizonSync
-              </h1>
+            <div className="flex items-center gap-3">
+              <BrandLogo className="hidden h-11 w-11 rounded-[16px] sm:flex" href="/global" />
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[rgb(var(--muted-foreground))]">
+                  Unified workspace
+                </p>
+                <BrandWordmark
+                  className="mt-1 hidden w-[188px] sm:flex lg:w-[220px]"
+                  href="/global"
+                />
+                <h1 className="mt-1 text-xl font-semibold text-[rgb(var(--foreground))] sm:hidden">
+                  HorizonSync
+                </h1>
+              </div>
             </div>
           </div>
 

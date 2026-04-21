@@ -4,6 +4,7 @@ import { Globe2, PanelsTopLeft, UserRound, Waves } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { BrandLogo, BrandWordmark } from "@/shared/components/BrandIdentity";
 import { cn } from "@/shared/lib/utils";
 
 const navigationItems = [
@@ -56,15 +57,15 @@ export function MasterNavigation({
     >
       <Link
         className={cn(
-          "flex items-center rounded-2xl bg-[rgb(var(--accent-strong))] text-lg font-bold text-white shadow-[0_18px_40px_-18px_rgba(67,112,255,0.9)]",
+          "flex items-center rounded-[24px] border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-lg font-bold text-white shadow-[0_18px_40px_-18px_rgba(67,112,255,0.28)] transition duration-300 hover:border-[rgba(var(--accent),0.38)] hover:shadow-[0_24px_48px_-26px_rgba(67,112,255,0.4)]",
           showLabels ? "gap-3 px-4 py-3" : "h-12 w-12 justify-center",
         )}
         href="/global"
         onClick={onNavigate}
       >
-        H
+        <BrandLogo className="h-10 w-10 rounded-[16px]" priority />
         {showLabels ? (
-          <span className="text-sm font-semibold tracking-[0.16em]">HorizonSync</span>
+          <BrandWordmark className="w-[150px]" />
         ) : null}
       </Link>
 
@@ -114,7 +115,7 @@ export function MasterNavigation({
         </p>
         {showLabels ? (
           <p className="mt-1 text-sm text-[rgb(var(--muted-foreground))]">
-            Global workspace controls
+            Branded workspace controls
           </p>
         ) : null}
       </div>

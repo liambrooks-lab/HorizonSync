@@ -14,9 +14,44 @@ const bodyFont = Source_Sans_3({
   variable: "--font-body",
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "HorizonSync",
-  description: "The ultimate unified workspace",
+  metadataBase: new URL(appUrl),
+  title: {
+    default: "HorizonSync",
+    template: "%s | HorizonSync",
+  },
+  description:
+    "A unified collaboration platform combining real-time communication, global publishing, and private execution in one polished workspace.",
+  applicationName: "HorizonSync",
+  icons: {
+    apple: "/branding/horizonsync-logo.jpg",
+    icon: "/branding/horizonsync-logo.jpg",
+    shortcut: "/branding/horizonsync-logo.jpg",
+  },
+  openGraph: {
+    title: "HorizonSync",
+    description:
+      "A unified collaboration platform combining real-time communication, global publishing, and private execution in one polished workspace.",
+    images: [
+      {
+        alt: "HorizonSync wordmark banner",
+        height: 210,
+        url: "/branding/horizonsync-banner.jpg",
+        width: 989,
+      },
+    ],
+    siteName: "HorizonSync",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    description:
+      "A unified collaboration platform combining real-time communication, global publishing, and private execution in one polished workspace.",
+    images: ["/branding/horizonsync-banner.jpg"],
+    title: "HorizonSync",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

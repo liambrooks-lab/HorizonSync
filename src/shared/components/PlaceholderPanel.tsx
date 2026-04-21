@@ -1,3 +1,4 @@
+import { BrandWordmark } from "@/shared/components/BrandIdentity";
 import { cn } from "@/shared/lib/utils";
 
 type PlaceholderPanelProps = {
@@ -18,9 +19,7 @@ export function PlaceholderPanel({
         className,
       )}
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[rgb(var(--muted-foreground))]">
-        HorizonSync
-      </p>
+      <BrandWordmark className="w-[150px] opacity-90" />
       <h2 className="mt-3 text-2xl font-semibold text-[rgb(var(--foreground))]">
         {title}
       </h2>

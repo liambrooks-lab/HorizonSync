@@ -1,4 +1,16 @@
-# HorizonSync
+<p align="center">
+  <img src="public/branding/horizonsync-logo.jpg" alt="HorizonSync logo" width="180" />
+</p>
+
+<p align="center">
+  <img src="public/branding/horizonsync-banner.jpg" alt="HorizonSync banner" width="640" />
+</p>
+
+<h1 align="center">HorizonSync</h1>
+
+<p align="center">
+  Unified communication, publishing, and execution for modern teams.
+</p>
 
 HorizonSync is a unified collaboration platform that combines:
 
@@ -118,7 +130,7 @@ public/
 
 ## Environment Variables
 
-Create a `.env` file with the values required for your environment.
+Copy `.env.example` to `.env` for local development, and mirror the same variables in Vercel or Render.
 
 ### Core
 
@@ -238,6 +250,31 @@ HorizonSync is designed to run well on a standard Next.js deployment stack such 
 - UploadThing for file handling
 - Resend or SMTP-compatible mail infrastructure
 
+## Deploying to Vercel
+
+1. Import the repository into Vercel.
+2. Set the framework preset to `Next.js`.
+3. Add every environment variable from `.env.example`.
+4. Point `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to your Vercel production URL.
+5. Use a managed PostgreSQL database and run `npx prisma migrate deploy` against production before launch if it has not already been executed.
+
+The repository includes `vercel.json` and a `postinstall` Prisma generate step so the build is production-safe by default.
+
+## Deploying to Render
+
+1. Create a new Blueprint or Web Service from this repository.
+2. Render will detect `render.yaml` and configure the Node service.
+3. Set all secret environment variables in the Render dashboard.
+4. Point `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to your Render domain or custom domain.
+5. Confirm that your production database is reachable from Render before the first deploy.
+
+The Render service is configured to:
+
+- install dependencies
+- run the production build
+- execute `prisma migrate deploy` on startup
+- serve the app with `next start`
+
 ## Recommended Production Checklist
 
 - configure a managed PostgreSQL database
@@ -248,6 +285,8 @@ HorizonSync is designed to run well on a standard Next.js deployment stack such 
 - set the OpenAI key for AI assistant features
 - verify UploadThing credentials
 - confirm `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL`
+- verify the logo and banner are present in `public/branding`
+- update your custom domain DNS before opening public access
 
 ## Roadmap Direction
 
@@ -264,5 +303,4 @@ Potential future expansion areas:
 **Rudranarayan Jena**
 
 - GitHub: [`-liambrooks-lab`](https://github.com/-liambrooks-lab)
-
 
