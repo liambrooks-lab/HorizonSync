@@ -300,7 +300,7 @@ Potential future expansion areas:
 ## Author
 
 <p align="center">
-  <img src="public/branding/horizonsync-logo.jpg" alt="HorizonSync author mark" width="92" />
+  <img src="public/author/rudranarayan-jena.jpg" alt="Rudranarayan Jena" width="150" />
 </p>
 
 <p align="center">
@@ -312,5 +312,5 @@ Potential future expansion areas:
 </p>
 
 <p align="center">
-  <a href="https://github.com/-liambrooks-lab"><strong>GitHub: @-liambrooks-lab</strong></a>
+  <a href="https://github.com/liambrooks-lab"><strong>GitHub: @liambrooks-lab</strong></a>
 </p>
