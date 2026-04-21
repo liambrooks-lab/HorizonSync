@@ -6,8 +6,7 @@
   <img src="public/branding/horizonsync-banner.jpg" alt="HorizonSync banner" width="640" />
 </p>
 
-<h1 align="center">HorizonSync</h1>
-
+---
 <p align="center">
   Unified communication, publishing, and execution for modern teams.
 </p>
