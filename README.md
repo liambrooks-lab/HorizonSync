@@ -300,7 +300,18 @@ Potential future expansion areas:
 
 ## Author
 
-**Rudranarayan Jena**
+<p align="center">
+  <img src="public/branding/horizonsync-logo.jpg" alt="HorizonSync author mark" width="92" />
+</p>
 
-- GitHub: [`-liambrooks-lab`](https://github.com/-liambrooks-lab)
+<p align="center">
+  <strong>Crafted by Rudranarayan Jena</strong>
+</p>
 
+<p align="center">
+  Product builder, full-stack engineer, and the creator behind HorizonSync.
+</p>
+
+<p align="center">
+  <a href="https://github.com/-liambrooks-lab"><strong>GitHub: @-liambrooks-lab</strong></a>
+</p>
