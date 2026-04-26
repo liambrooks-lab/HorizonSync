@@ -13,9 +13,9 @@
 
 HorizonSync is a unified collaboration platform that combines:
 
-- real-time team communication inspired by Discord
-- a public social feed inspired by Twitter/X
-- a private knowledge and execution workspace inspired by Notion
+- real-time team communication 
+- a public social feed 
+- a private knowledge and execution workspace 
 
 The product is designed as a single, cohesive operating surface for modern teams that want communication, planning, publishing, and AI assistance in one place.
 
