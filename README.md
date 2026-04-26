@@ -304,11 +304,16 @@ Potential future expansion areas:
 </p>
 
 <p align="center">
-  <strong>Crafted by Rudranarayan Jena</strong>
+  <strong>Crafted by MR. Rudranarayan Jena</strong>
 </p>
 
 <p align="center">
   Product builder, Full-stack Developer, AI Enthuiast and the creator behind HorizonSync.
+  
+</p>
+
+<p align="center">
+Focused on building polished developer products, real-world web applications, and modern AI-assisted workflows.
 </p>
 
 <p align="center">
