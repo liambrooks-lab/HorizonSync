@@ -308,6 +308,10 @@ Potential future expansion areas:
 </p>
 
 <p align="center">
+   <strong>Founder @Voxion Labs</strong>
+</p>
+
+<p align="center">
   Product builder, Full-stack Developer, AI Enthuiast and the creator behind HorizonSync.
   
 </p>
@@ -317,5 +321,5 @@ Focused on building polished developer products, real-world web applications, an
 </p>
 
 <p align="center">
-  <a href="https://github.com/liambrooks-lab"><strong>GitHub: @liambrooks-lab</strong></a>
+  <a href="https://github.com/liambrooks-lab">Author's GitHub</a>
 </p>
